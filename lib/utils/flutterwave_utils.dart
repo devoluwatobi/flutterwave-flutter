@@ -12,7 +12,7 @@ class FlutterwaveUtils {
       final blockCipher = BlockCipher(TripleDESEngine(), encryptionKey);
       return blockCipher.encodeB64(data);
     } catch (error) {
-      throw(FlutterWaveError("Unable to encrypt request"));
+      throw(FlutterWaveError("Unable to encrypt request: $error"));
     }
   }
 

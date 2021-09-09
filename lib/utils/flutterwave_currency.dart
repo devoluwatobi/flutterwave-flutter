@@ -8,6 +8,8 @@ class FlutterwaveCurrency {
   static const String XAF = "XAF";
   static const String XOF = "XOF";
   static const String ZAR = "ZAR";
+  static const String USD = "USD";
+  static const String GBP = "GBP";
 
 
 //TODO to be added when available on v3

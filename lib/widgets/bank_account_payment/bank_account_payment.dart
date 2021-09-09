@@ -314,10 +314,10 @@ class PayWithBankAccountState extends State<PayWithBankAccount> {
             this.widget._paymentManager.publicKey,
             this.widget._paymentManager.isDebugMode,
             MetricManager.ACCOUNT_CHARGE_VERIFY);
-        if ((response!.data!.status == FlutterwaveConstants.SUCCESSFUL ||
-                response!.data!.status == FlutterwaveConstants.SUCCESS) &&
-            response!.data!.amount == this.widget._paymentManager.amount &&
-            response!.data!.flwRef == chargeResponse.data!.flwRef) {
+        if ((response?.data?.status == FlutterwaveConstants.SUCCESSFUL ||
+                response?.data?.status == FlutterwaveConstants.SUCCESS) &&
+            response?.data?.amount == this.widget._paymentManager.amount &&
+            response?.data?.flwRef == chargeResponse.data!.flwRef) {
           timer.cancel();
           this._onPaymentComplete(response!);
         } else {

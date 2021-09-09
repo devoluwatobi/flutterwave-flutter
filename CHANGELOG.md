@@ -1,3 +1,6 @@
+## [1.0.1] - September 09, 2021
+* Update card transactions error messages
+
 ## [1.0.0] - August 24, 2021
 * Migrate to null-safety
 * Add Zamtel to Zambia Mobile Money
@@ -12,17 +15,17 @@
 ## [0.0.3-dev.2] - March 12, 2021
 * Added support for NO_AUTH cards
 
-## [0.0.3-dev.1]
-* Optimized payment home screen - March 11, 2021
+## [0.0.3-dev.1] - March 11, 2021
+* Optimized payment home screen
 * Displayed debug label only on production
 * Added metric tracking
 * Updated UI
 * Added Bank Transfer Payment
 * Updated dependencies
 
-## [0.0.2] 
-* Updated dependencies project dependencies add example project - October 9, 2020
+## [0.0.2] - October 9, 2020
+* Updated dependencies project dependencies add example project
 * Added example project
 
-## [0.0.1] 
-* Intital release of Flutterwave's flutter library - October 9, 2020
+## [0.0.1] - October 9, 2020 
+* Intital release of Flutterwave's flutter library

@@ -71,17 +71,27 @@ class CardPaymentManager {
   /// Initiates Card Request
   Future<dynamic> payWithCard(final http.Client client,
       final ChargeCardRequest chargeCardRequest) async {
-    Map<String, String> encryptedPayload;
     this.chargeCardRequest = chargeCardRequest;
 
     if (this.cardPaymentListener == null) {
-      this.cardPaymentListener!.onError("No CardPaymentListener Attached!");
+      this.cardPaymentListener!.onError("No CardPaymentListener Attached.");
       return;
     }
     _stopwatch.start();
+
+    Map<String, String> encryptedPayload;
+
     try {
       encryptedPayload = this._prepareRequest(chargeCardRequest);
+    } catch(error, stacktrace) {
+      print(stacktrace);
+      this
+          .cardPaymentListener
+          ?.onError("Unable to encrypt request. Please try again");
+      return;
+    }
 
+    try {
       final url = FlutterwaveURLS.getBaseUrl(this.isDebugMode) +
           FlutterwaveURLS.CHARGE_CARD_URL;
       final uri = Uri.parse(url);
@@ -94,10 +104,11 @@ class CardPaymentManager {
           body: jsonEncode(encryptedPayload));
 
       this._handleResponse(response);
-    } catch (error) {
+    } catch (error, stacktrace) {
+      print(stacktrace);
       this
           .cardPaymentListener
-          ?.onError("Unable to initiate card transaction. Please try again");
+          ?.onError("Unable to initiate card transaction.");
       return;
     } finally {
       _stopwatch.stop();
@@ -118,6 +129,15 @@ class CardPaymentManager {
             MetricManager.INITIATE_CARD_CHARGE,
             "${_stopwatch.elapsedMilliseconds}ms");
         _stopwatch.reset();
+
+        if (responseBody.status == FlutterwaveConstants.SUCCESS &&
+            responseBody.data != null &&
+            (responseBody.data!.status == FlutterwaveConstants.SUCCESSFUL ||
+                responseBody.data!.status == FlutterwaveConstants.SUCCESS) &&
+            responseBody.data!.txRef == this.txRef &&
+            responseBody.data!.amount == this.amount) {
+          return this.cardPaymentListener?.onNoAuthRequired(responseBody);
+        }
 
         final bool requiresExtraAuth =
             (responseBody.message == FlutterwaveConstants.REQUIRES_AUTH) &&
@@ -144,7 +164,7 @@ class CardPaymentManager {
           }
           return this
               .cardPaymentListener
-              ?.onError("Unable to complete payment. Please try another card");
+              ?.onError("Unable to complete payment. 3DS auth model detected but no redirect_url provided.");
         }
         if (requiresOtp) {
           return this
@@ -152,34 +172,27 @@ class CardPaymentManager {
               ?.onRequireOTP(responseBody, responseBody.data!.processorResponse!);
         }
 
-        if (responseBody.status == FlutterwaveConstants.SUCCESS &&
-            responseBody.data != null &&
-            (responseBody.data!.status == FlutterwaveConstants.SUCCESSFUL ||
-                responseBody.data!.status == FlutterwaveConstants.SUCCESS) &&
-            responseBody.data!.txRef == this.txRef &&
-            responseBody.data!.amount == this.amount) {
-          return this.cardPaymentListener?.onNoAuthRequired(responseBody);
-        }
+        MetricManager.logMetric(
+            http.Client(),
+            this.publicKey,
+            MetricManager.INITIATE_CARD_CHARGE_ERROR,
+            "${_stopwatch.elapsedMilliseconds}ms");
+        _stopwatch.reset();
 
         return this
             .cardPaymentListener
-            ?.onError("Unable to complete payment. Please try another card");
+            ?.onError("Unable to complete payment. Authorisation mode not specified.");
       }
 
-      MetricManager.logMetric(
-          http.Client(),
-          this.publicKey,
-          MetricManager.INITIATE_CARD_CHARGE_ERROR,
-          "${_stopwatch.elapsedMilliseconds}ms");
-      _stopwatch.reset();
-
-      if (response.statusCode.toString().substring(0, 1) == "4") {
+      if (response.statusCode >= 400) {
         return this.cardPaymentListener?.onError(responseBody.message!);
       }
+
       return this
           .cardPaymentListener
           ?.onError(jsonDecode(response.body).toString());
-    } catch (e) {
+    } catch (e, stacktrace) {
+      print(stacktrace);
       this.cardPaymentListener?.onError(e.toString());
     }
   }
@@ -198,7 +211,7 @@ class CardPaymentManager {
       }
       return this
           .cardPaymentListener
-          ?.onError("Unable to complete card charge");
+          ?.onError("Unable to complete card charge. redirect url not specified");
     }
     if (Authorization.OTP == authMode) {
       final _authMode = response.data?.processorResponse;
@@ -209,11 +222,11 @@ class CardPaymentManager {
       }
       return this
           .cardPaymentListener
-          ?.onError("Unable to complete card charge");
+          ?.onError("Unable to complete card charge. OTP message not specified.");
     }
     if (Authorization.PIN == authMode)
       return this.cardPaymentListener?.onRequirePin(response);
-    return;
+    return this.cardPaymentListener?.onError("Unable to detect card auth mode");
   }
 
   /// This method is responsible for updating a card request with the card's pin

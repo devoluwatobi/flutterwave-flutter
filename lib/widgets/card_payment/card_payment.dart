@@ -59,7 +59,7 @@ class _CardPaymentState extends State<CardPayment>
         body: Form(
           key: this._cardFormKey,
           child: Container(
-            margin: EdgeInsets.fromLTRB(10, 30, 10, 10),
+            margin: EdgeInsets.fromLTRB(0, 30, 0, 10),
             width: double.infinity,
             child: Column(
               children: [
@@ -76,7 +76,7 @@ class _CardPaymentState extends State<CardPayment>
                   ),
                 ),
                 Container(
-                  margin: EdgeInsets.fromLTRB(40, 5, 40, 5),
+                  margin: EdgeInsets.fromLTRB(30, 5, 40, 5),
                   width: double.infinity,
                   child: TextFormField(
                     decoration: InputDecoration(
@@ -95,15 +95,15 @@ class _CardPaymentState extends State<CardPayment>
                   ),
                 ),
                 Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                  // mainAxisAlignment: MainAxisAlignment.spaceAround,
                   children: [
                     Container(
-                      width: MediaQuery.of(context).size.width / 7,
-                      margin: EdgeInsets.fromLTRB(30, 5, 30, 5),
+                      width: MediaQuery.of(context).size.width / 6,
+                      margin: EdgeInsets.fromLTRB(30, 5, 10, 5),
                       child: TextFormField(
                         decoration: InputDecoration(
                           hintText: "MM",
-                          labelText: "Month",
+                          labelText: "MM",
                           counterText: "",
                         ),
                         maxLength: 2,
@@ -120,12 +120,12 @@ class _CardPaymentState extends State<CardPayment>
                       ),
                     ),
                     Container(
-                      width: MediaQuery.of(context).size.width / 7,
-                      margin: EdgeInsets.fromLTRB(40, 5, 40, 5),
+                      width: MediaQuery.of(context).size.width / 6,
+                      margin: EdgeInsets.fromLTRB(10, 5, 5, 5),
                       child: TextFormField(
                         decoration: InputDecoration(
                           hintText: "YY",
-                          labelText: "Year",
+                          labelText: "YY",
                           counterText: "",
                         ),
                         maxLength: 2,
@@ -142,8 +142,8 @@ class _CardPaymentState extends State<CardPayment>
                       ),
                     ),
                     Container(
-                      width: MediaQuery.of(context).size.width / 7,
-                      margin: EdgeInsets.fromLTRB(40, 5, 40, 5),
+                      width: MediaQuery.of(context).size.width / 3,
+                      margin: EdgeInsets.fromLTRB(50, 5, 0, 0),
                       child: TextFormField(
                         decoration: InputDecoration(
                           hintText: "cvv",
@@ -171,7 +171,7 @@ class _CardPaymentState extends State<CardPayment>
                 Container(
                   width: double.infinity,
                   height: 45,
-                  margin: EdgeInsets.fromLTRB(40, 20, 20, 40),
+                  margin: EdgeInsets.fromLTRB(30, 20, 30, 30),
                   child: RaisedButton(
                     onPressed: this._onCardFormClick,
                     color: Colors.orangeAccent,
@@ -204,7 +204,11 @@ class _CardPaymentState extends State<CardPayment>
     this._showLoading(FlutterwaveConstants.INITIATING_PAYMENT);
 
     final ChargeCardRequest chargeCardRequest = ChargeCardRequest(
-        cardNumber: this._cardNumberFieldController.value.text.trim()
+        cardNumber: this
+            ._cardNumberFieldController
+            .value
+            .text
+            .trim()
             .replaceAll(new RegExp(r"\s+"), ""),
         cvv: this._cardCvvFieldController.value.text.trim(),
         expiryMonth: this._cardMonthFieldController.value.text.trim(),
@@ -237,9 +241,12 @@ class _CardPaymentState extends State<CardPayment>
   @override
   void onRedirect(ChargeResponse chargeResponse, String url) async {
     this._closeDialog();
-    final result = await Navigator.of(this.context).push(MaterialPageRoute(
+    final result = await Navigator.of(this.context).push(
+      MaterialPageRoute(
         builder: (context) => AuthorizationWebview(
-            Uri.encodeFull(url), this.widget._paymentManager.redirectUrl!)));
+            Uri.encodeFull(url), this.widget._paymentManager.redirectUrl!),
+      ),
+    );
     if (result != null) {
       final bool hasError = result.runtimeType != " ".runtimeType;
       this._closeDialog();
@@ -275,7 +282,6 @@ class _CardPaymentState extends State<CardPayment>
       this.widget._paymentManager.addAddress(addressDetails);
       return;
     }
-    this._closeDialog();
   }
 
   @override
@@ -294,21 +300,20 @@ class _CardPaymentState extends State<CardPayment>
     final otp = await Navigator.of(context)
         .push(MaterialPageRoute(builder: (context) => RequestOTP(message)));
     if (otp == null) return;
-    this._showLoading(FlutterwaveConstants.VERIFYING);
+    this._showLoading(FlutterwaveConstants.VALIDATING_OTP);
     final ChargeResponse chargeResponse =
         await this.widget._paymentManager.addOTP(otp, response.data!.flwRef!);
     this._closeDialog();
     if (chargeResponse.message == FlutterwaveConstants.CHARGE_VALIDATED) {
-      this._showLoading(FlutterwaveConstants.VERIFYING);
       this._handleTransactionVerification(chargeResponse);
     } else {
-      this._closeDialog();
       this._showSnackBar(chargeResponse.message!);
     }
   }
 
   void _handleTransactionVerification(
       final ChargeResponse chargeResponse) async {
+    this._showLoading(FlutterwaveConstants.VERIFYING);
     final verifyResponse = await FlutterwaveAPIUtils.verifyPayment(
         chargeResponse.data!.flwRef!,
         http.Client(),
@@ -317,10 +322,10 @@ class _CardPaymentState extends State<CardPayment>
         MetricManager.VERIFY_CARD_CHARGE);
     this._closeDialog();
 
-    if ((verifyResponse.data!.status == FlutterwaveConstants.SUCCESS ||
-            verifyResponse.data!.status == FlutterwaveConstants.SUCCESSFUL) &&
-        verifyResponse.data!.txRef == this.widget._paymentManager.txRef &&
-        verifyResponse.data!.amount == this.widget._paymentManager.amount) {
+    if ((verifyResponse.data?.status == FlutterwaveConstants.SUCCESS ||
+            verifyResponse.data?.status == FlutterwaveConstants.SUCCESSFUL) &&
+        verifyResponse.data?.txRef == this.widget._paymentManager.txRef &&
+        verifyResponse.data?.amount == this.widget._paymentManager.amount) {
       this.onComplete(verifyResponse);
     } else {
       this._showSnackBar(verifyResponse.message!);

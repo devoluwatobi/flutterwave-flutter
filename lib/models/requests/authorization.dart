@@ -4,6 +4,8 @@ class Authorization {
   static const String OTP = "otp";
   static const String PIN = "pin";
   static const String CALLBACK = "callback";
+  static const String VBVSECURE = "VBVSECURECODE";
+  static const String VBV = "VBV";
 
   String mode = "";
   String? pin;
